@@ -98,7 +98,6 @@ function NumberInput(props: INumberInput) {
       </div>
     </div>
   );
-  // return <Input {...props} onInput={handleInput} />;
 }
 
 Input.Number = NumberInput;

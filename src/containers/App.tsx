@@ -30,12 +30,12 @@ export default function App() {
 
   return (
     <div style={styles.app}>
-      <Card>
+      <Card style={styles.card}>
         <h3>个人综合所得税调整系统</h3>
         <Divider />
         <div>
           <div style={{ marginBottom: "5px" }}>
-            <label htmlFor="income">每月收入: </label>
+            <label htmlFor="income">每月收入（元）: </label>
             <Input.Number
               min={0}
               value={income}
@@ -45,7 +45,7 @@ export default function App() {
             />
           </div>
           <div style={{ marginBottom: "5px" }}>
-            <label htmlFor="bonus">年终奖: </label>
+            <label htmlFor="bonus">年终奖（元）: </label>
             <Input.Number
               min={0}
               value={bonus}

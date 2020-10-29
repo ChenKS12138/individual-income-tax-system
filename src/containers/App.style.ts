@@ -8,6 +8,9 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
   }),
+  card: createStyle({
+    minWidth: "70%",
+  }),
 };
 
 export default styles;
