@@ -1,4 +1,5 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
+import { combineStyle, numberInRange } from "~utils";
 import styles from "./Input.Style";
 
 interface IInput {
@@ -6,7 +7,7 @@ interface IInput {
   onInput: (value: number) => void;
   id: string;
   type: "text";
-  // style: any;
+  style?: any;
 }
 
 export default function Input(props: IInput) {
@@ -20,38 +21,84 @@ export default function Input(props: IInput) {
       };
       props.onInput && props.onInput(newEvent);
     },
-    [props.value]
+    [props, props.value]
   );
 
   return <input {...props} onInput={handleInput} />;
 }
 
-interface INumberInput extends IInput {}
+interface INumberInput extends IInput {
+  min?: number;
+  max?: number;
+}
 
 function NumberInput(props: INumberInput) {
+  const value = useMemo(
+    () => numberInRange(props.value, props.min, props.max),
+    [props, props.value, props.min, props.max]
+  );
+
+  const isDisableDecrease = useMemo(() => props.value <= props.min, [
+    props,
+    props.value,
+    props.min,
+  ]);
+
+  const isDisableIncrease = useMemo(() => props.value >= props.max, [
+    props,
+    props.value,
+    props.max,
+  ]);
+
   const handleInput = useCallback(
     (event) => {
       const value = Number(event.target.value);
       if (!Number.isNaN(value)) {
-        props.onInput(value);
+        props.onInput(numberInRange(value, props.min, props.max));
       }
     },
-    [props.onInput]
+    [props, props.onInput, props.min, props.max]
   );
-  // return (
-  //   <div style={styles.numberInput.container}>
-  //     <span style={styles.numberInput.decreaseBtn}>
-  //       <i style={styles.numberInput.btnIcon}>{"-"}</i>
-  //     </span>
-  //     <span style={styles.numberInput.increaseBtn}>
-  //       <i style={styles.numberInput.btnIcon}>{"+"}</i>
-  //     </span>
-  //     <div style={styles.numberInput.input}>
-  //       <Input {...props} onInput={handleInput} />
-  //     </div>
-  //   </div>
-  // );
-  return <Input {...props} onInput={handleInput} />;
+
+  const handleDecrease = useCallback(() => {
+    props.onInput(props.value - 1);
+  }, [props, props.onInput]);
+
+  const handleIncrease = useCallback(() => {
+    props.onInput(props.value + 1);
+  }, [props, props.onInput]);
+
+  return (
+    <div style={styles.numberInput.container}>
+      <span
+        onClick={isDisableDecrease ? null : handleDecrease}
+        style={combineStyle([
+          styles.numberInput.decreaseBtn,
+          isDisableDecrease ? styles.numberInput.disableBtn : null,
+        ])}
+      >
+        <span style={styles.numberInput.btnIcon}>{"-"}</span>
+      </span>
+      <span
+        onClick={isDisableIncrease ? null : handleIncrease}
+        style={combineStyle([
+          styles.numberInput.increaseBtn,
+          isDisableIncrease ? styles.numberInput.disableBtn : null,
+        ])}
+      >
+        <span style={styles.numberInput.btnIcon}>{"+"}</span>
+      </span>
+      <div style={styles.numberInput.input}>
+        <Input
+          {...props}
+          value={value}
+          style={styles.numberInput.inputInner}
+          onInput={handleInput}
+        />
+      </div>
+    </div>
+  );
+  // return <Input {...props} onInput={handleInput} />;
 }
 
 Input.Number = NumberInput;
