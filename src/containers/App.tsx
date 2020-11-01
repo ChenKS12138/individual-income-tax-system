@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { getLeastTaxSolution, getOriginalTaxSolution } from "~/utils";
+import { getOriginalTaxSolution, getSolution2 } from "~/utils";
 import { Input, Card, Divider } from "~/components";
 
 import styles from "./App.style";
@@ -20,7 +20,7 @@ export default function App() {
 
   const leastTaxSolution = useMemo(
     () =>
-      getLeastTaxSolution({
+      getSolution2({
         maxMonthCount: maxMonthCount,
         bonus,
         realIncome: income,
@@ -28,14 +28,24 @@ export default function App() {
     [maxMonthCount, bonus, income]
   );
 
+  const originalTaxSolutionTotalIncome = useMemo(
+    () => income * 12 + bonus - originalTaxSolution.bonus,
+    [income, bonus, originalTaxSolution, originalTaxSolution.bonus]
+  );
+
+  const leastTaxSolutionTotalIncome = useMemo(
+    () => income * 12 + bonus - leastTaxSolution.bonus,
+    [income, bonus, leastTaxSolution, leastTaxSolution.bonus]
+  );
+
   return (
     <div style={styles.app}>
       <Card style={styles.card}>
-        <h3>个人综合所得税调整系统</h3>
+        <h3 style={styles.title}>个人综合所得税调整系统</h3>
         <Divider />
         <div>
-          <div style={{ marginBottom: "5px" }}>
-            <label htmlFor="income">每月收入（元）: </label>
+          <div style={styles.formItem}>
+            <label htmlFor="income">每月应纳税所得额（元）: </label>
             <Input.Number
               min={0}
               value={income}
@@ -44,7 +54,7 @@ export default function App() {
               type="text"
             />
           </div>
-          <div style={{ marginBottom: "5px" }}>
+          <div style={styles.formItem}>
             <label htmlFor="bonus">年终奖（元）: </label>
             <Input.Number
               min={0}
@@ -54,7 +64,7 @@ export default function App() {
               type="text"
             />
           </div>
-          <div style={{ marginBottom: "5px" }}>
+          <div style={styles.formItem}>
             <label htmlFor="max-month-count">最多调整月份数：</label>
             <Input.Number
               min={0}
@@ -66,20 +76,17 @@ export default function App() {
             />
           </div>
           <Divider />
-          <div>
-            <span>
-              原总个人所得税为{originalTaxSolution?.totalTax?.toFixed?.(2)}元
-            </span>
-          </div>
-          <div>
-            <span>
-              调整后总个人所得税{leastTaxSolution?.totalTax?.toFixed?.(2)}元
-            </span>
-          </div>
-          <div>
-            <span>
-              调整后的年终奖为{leastTaxSolution?.bonus?.toFixed?.(2)}元
-            </span>
+          <div style={{ ...styles.result.container, marginBottom: "5px" }}>
+            <div>
+              <p>原总应纳税所得额：{originalTaxSolutionTotalIncome}元</p>
+              <p>原年终奖：{originalTaxSolution.bonus}元</p>
+              <p>原总税额：{originalTaxSolution.totalTax}元</p>
+            </div>
+            <div>
+              <p>现总应纳税所得额：{leastTaxSolutionTotalIncome}元</p>
+              <p>现年终奖：{leastTaxSolution.bonus}元</p>
+              <p>现总税额：{leastTaxSolution.totalTax}元</p>
+            </div>
           </div>
         </div>
       </Card>

@@ -8,9 +8,25 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
   }),
+  title: createStyle({
+    textAlign: "center",
+  }),
   card: createStyle({
     minWidth: "70%",
   }),
+  formItem: createStyle({
+    marginBottom: "5px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-around",
+  }),
+  result: {
+    container: createStyle({
+      display: "flex",
+      justifyContent: "space-around",
+      alignItems: "center",
+    }),
+  },
 };
 
 export default styles;

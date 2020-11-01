@@ -6,7 +6,7 @@ type Tax = {
 };
 
 type TaxSolution = {
-  totalTax: number; // 总税收
+  totalTax: number; // 总税额
   bonus: number; // 年终奖
 };
 
@@ -56,47 +56,58 @@ export const taxTable: Array<Tax> = [
 ];
 
 /**
- *  根据月收入得到税率
- * @param monthlyIncome 月收入
- * @returns {Tax}
+ * @param income
  */
-export function getTax(monthlyIncome: number): Tax {
-  if (monthlyIncome < 0) return null;
-  return taxTable.find(
-    (one) => monthlyIncome > one.min && monthlyIncome <= one.max
-  );
+export function getTaxRule(income: number): Tax {
+  return taxTable.find((one) => income > one.min && income <= one.max) ?? null;
 }
 
 /**
- * 获取最低的纳税方案
- * @param {object} param0
- * @param {number} param0.maxMonthCount
- * @param {number} param0.realIncome
- * @param {number} param0.bonus
- * @returns {TaxSolution}
+ * 根据月收入得到税额
+ * @param {number} income
+ * @returns {number}
  */
-export function getLeastTaxSolution({
-  maxMonthCount,
-  realIncome,
-  bonus,
-}: {
-  maxMonthCount: number;
-  realIncome: number;
-  bonus: number;
-}): TaxSolution {
-  if (maxMonthCount < 0 || maxMonthCount > 12) return null;
-  const newBonus = (realIncome * maxMonthCount + bonus) / (maxMonthCount + 1);
-  const tax1 = getTax(realIncome);
-  const tax2 = getTax(newBonus);
-  const totalTax =
-    (tax1?.rate * realIncome - tax1?.quickCalculationDeduction) *
-      (12 - maxMonthCount) +
-    (tax2?.rate * newBonus - tax2?.quickCalculationDeduction) *
-      (maxMonthCount + 1);
-  return {
-    bonus: newBonus,
-    totalTax,
-  };
+function getSalaryTax(income: number): number {
+  if (income < 0) return null;
+  const tax = getTaxRule(income);
+  return tax.rate * income - tax.quickCalculationDeduction;
+}
+
+/**
+ * 根据奖金得到税额
+ * @param {number} income
+ * @returns {number}
+ */
+function getBonusTax(income: number): number {
+  if (income < 0) return null;
+  const incomePerMonth = income / 12;
+  const tax = getTaxRule(income);
+  return incomePerMonth * tax.rate * 12 - tax.quickCalculationDeduction;
+}
+
+/**
+ * 得到最终的税收
+ * @param {nubmer} income
+ * @param {number} bonus
+ * @param {number} adjustMonth
+ * @param {number} adjustBonus
+ */
+function getTotoalTax(
+  income: number,
+  bonus: number,
+  adjustMonth: number,
+  adjustBonus: number
+): number {
+  if (adjustMonth === 0) {
+    return Number((getSalaryTax(income) * 12 + getBonusTax(bonus)).toFixed(2));
+  }
+  return Number(
+    (
+      getSalaryTax(income + adjustBonus / adjustMonth) * adjustMonth +
+      getSalaryTax(income) * (12 - adjustMonth) +
+      getBonusTax(bonus - adjustBonus)
+    ).toFixed(2)
+  );
 }
 
 /**
@@ -113,9 +124,58 @@ export function getOriginalTaxSolution({
   realIncome: number;
   bonus: number;
 }): TaxSolution {
-  return getLeastTaxSolution({
-    realIncome,
-    bonus,
-    maxMonthCount: 0,
-  });
+  const totalTax = getTotoalTax(realIncome, bonus, 0, 0);
+  return {
+    bonus: bonus,
+    totalTax,
+  };
+}
+
+/**
+ * 获取最低税额的方案
+ * @param {object} param0
+ * @param {number} param0.realIncome
+ * @param {number} param0.bonus
+ * @param {number} param0.maxMonthCount
+ * @returns {TaxSolution}
+ */
+export function getSolution2({
+  bonus,
+  maxMonthCount,
+  realIncome,
+}: {
+  realIncome: number;
+  bonus: number;
+  maxMonthCount: number;
+}): TaxSolution {
+  if (maxMonthCount === 0) {
+    return getOriginalTaxSolution({
+      realIncome,
+      bonus,
+    });
+  }
+  const solution = Array.from({ length: bonus + 1 })
+    .map((x, key) => bonus - key)
+    .reduce(
+      (prev, current) => {
+        const totalTax = getTotoalTax(
+          realIncome,
+          bonus,
+          maxMonthCount,
+          current
+        );
+        if (totalTax < prev.totalTax) {
+          return {
+            totalTax,
+            bonus: current,
+          };
+        }
+        return prev;
+      },
+      {
+        totalTax: Infinity,
+        bonus,
+      }
+    );
+  return solution;
 }
