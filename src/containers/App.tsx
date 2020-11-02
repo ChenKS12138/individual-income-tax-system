@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { getOriginalTaxSolution, getSolution2 } from "~/utils";
-import { Input, Card, Divider } from "~/components";
+import { getOriginalTaxSolution, getSolution2, rarefyArray } from "~/utils";
+import { Input, Card, Divider, Trend } from "~/components";
 
 import styles from "./App.style";
 
@@ -36,6 +36,11 @@ export default function App() {
   const leastTaxSolutionTotalIncome = useMemo(
     () => income * 12 + bonus - leastTaxSolution.bonus,
     [income, bonus, leastTaxSolution, leastTaxSolution.bonus]
+  );
+
+  const points = useMemo(
+    () => rarefyArray(leastTaxSolution.graph ?? [], 1000),
+    [leastTaxSolution, leastTaxSolution.graph]
   );
 
   return (
@@ -87,6 +92,13 @@ export default function App() {
               <p>现年终奖：{leastTaxSolution.bonus}元</p>
               <p>现总税额：{leastTaxSolution.totalTax}元</p>
             </div>
+          </div>
+          <Divider />
+          <div style={{ ...styles.result.graph, marginBottom: "5px" }}>
+            <h5 style={{ marginBottom: "5px" }}>
+              实际年终奖和实际个人所得税趋势图
+            </h5>
+            <Trend points={points ?? []} width={400} height={300} />
           </div>
         </div>
       </Card>

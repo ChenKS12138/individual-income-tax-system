@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from "react";
-import { combineStyle, numberInRange } from "~utils";
+import { combineStyle, numberInRange } from "~/utils";
 import styles from "./Input.Style";
 
 interface IInput {

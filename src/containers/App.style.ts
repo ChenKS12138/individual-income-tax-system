@@ -26,6 +26,11 @@ const styles = {
       justifyContent: "space-around",
       alignItems: "center",
     }),
+    graph: createStyle({
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+    }),
   },
 };
 

@@ -8,6 +8,7 @@ type Tax = {
 type TaxSolution = {
   totalTax: number; // 总税额
   bonus: number; // 年终奖
+  graph?: [number, number][]; // [最终年终奖，最终纳税额]
 };
 
 export const taxTable: Array<Tax> = [
@@ -56,7 +57,7 @@ export const taxTable: Array<Tax> = [
 ];
 
 /**
- * @param income
+ * @param {number} income
  */
 export function getTaxRule(income: number): Tax {
   return taxTable.find((one) => income > one.min && income <= one.max) ?? null;
@@ -81,7 +82,7 @@ function getSalaryTax(income: number): number {
 function getBonusTax(income: number): number {
   if (income < 0) return null;
   const incomePerMonth = income / 12;
-  const tax = getTaxRule(income);
+  const tax = getTaxRule(incomePerMonth);
   return incomePerMonth * tax.rate * 12 - tax.quickCalculationDeduction;
 }
 
@@ -154,8 +155,9 @@ export function getSolution2({
       bonus,
     });
   }
+  const graph = [];
   const solution = Array.from({ length: bonus + 1 })
-    .map((x, key) => bonus - key)
+    .map((x, key) => key)
     .reduce(
       (prev, current) => {
         const totalTax = getTotoalTax(
@@ -164,10 +166,12 @@ export function getSolution2({
           maxMonthCount,
           current
         );
+        graph.push([current, totalTax]);
         if (totalTax < prev.totalTax) {
           return {
             totalTax,
             bonus: current,
+            graph,
           };
         }
         return prev;
@@ -175,6 +179,7 @@ export function getSolution2({
       {
         totalTax: Infinity,
         bonus,
+        graph: [],
       }
     );
   return solution;
