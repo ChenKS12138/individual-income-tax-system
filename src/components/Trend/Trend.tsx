@@ -62,10 +62,24 @@ export default function Trend({ points, width, height }: ITrend) {
       context,
       points.map((point) => [
         ((point[0] - minX) / (maxX - minX)) * contentWidth + offsetX,
-        (1 - (point[1] - minY) / (maxY - minY)) * contentHeight + offsetY,
+        (1 - (point[1] - minY) / Math.max(maxY - minY, 0.001)) * contentHeight +
+          offsetY,
       ])
     );
   }, [ref, points, contentSize, contentOffset, width, height]);
+
+  useEffect(() => {
+    const context: CanvasRenderingContext2D = ref.current.getContext("2d");
+    context.setTransform(
+      window.devicePixelRatio,
+      0,
+      0,
+      window.devicePixelRatio,
+      0,
+      0
+    );
+  }, []);
+
   return (
     <div style={{ ...styles.container, width, height }}>
       <canvas style={styles.canvas} width={width} height={height} ref={ref} />
