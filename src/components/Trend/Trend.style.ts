@@ -14,7 +14,7 @@ const styles = {
   textY: createStyle({
     position: "absolute",
     top: 0,
-    transform: " translateX(-120%)",
+    transform: " translateX(-80%)",
   }),
   textX: createStyle({
     position: "absolute",

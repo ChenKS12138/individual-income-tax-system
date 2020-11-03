@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef } from "react";
+import { iterator } from "~/utils";
 import styles from "./Trend.style";
 
 interface ITrend {
@@ -59,7 +60,7 @@ export default function Trend({
       [width, (height + contentHeight) / 2],
       [width - 5, (height + contentHeight) / 2 + 5],
     ]);
-    Array.from({ length: Y_AXIS_STEP }).forEach((v, key) => {
+    iterator(Y_AXIS_STEP)(function (key) {
       renderBrokenLine(context, [
         [offsetX - 20 - 5, (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP)],
         [offsetX - 20 + 5, (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP)],
@@ -67,7 +68,7 @@ export default function Trend({
       points.length &&
         renderText(
           context,
-          renderScale(minY + (maxY - minY || 1) * (key / Y_AXIS_STEP)),
+          formatScale(minY + (maxY - minY || 1) * (key / Y_AXIS_STEP)),
           [
             offsetX - 20 - 10,
             (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP),
@@ -87,7 +88,7 @@ export default function Trend({
       [offsetX - 20 - 10, (height + contentHeight) / 2],
       [width, (height + contentHeight) / 2],
     ]);
-    Array.from({ length: X_AXIS_STEP }).forEach((v, key) => {
+    iterator(X_AXIS_STEP)(function (key) {
       renderBrokenLine(context, [
         [
           offsetX + contentWidth * (key / X_AXIS_STEP),
@@ -101,7 +102,7 @@ export default function Trend({
       points.length &&
         renderText(
           context,
-          renderScale(minX + (maxX - minX) * (key / X_AXIS_STEP)),
+          formatScale(minX + (maxX - minX) * (key / X_AXIS_STEP)),
           [
             offsetX + contentWidth * (key / X_AXIS_STEP),
             (height + contentHeight) / 2 + 10,
@@ -191,7 +192,11 @@ function renderText(
   context.restore();
 }
 
-function renderScale(num: number): string {
+/**
+ * @param {number} num
+ * @returns {string}
+ */
+function formatScale(num: number): string {
   if (num < 10) {
     return num.toFixed(2);
   }

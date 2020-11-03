@@ -1,3 +1,5 @@
+import { iterator } from "./index";
+
 type Tax = {
   min: number; // 阶梯下限
   max: number; // 阶梯上限
@@ -158,31 +160,23 @@ export function getSolution2({
   const graph = [];
   const cap = Math.min(bonus + 1, 500000);
   const step = Math.max(1, Math.ceil((bonus + 1) / cap));
-  const solution = Array.from({ length: cap })
-    .map((x, key) => key * step)
-    .reduce(
-      (prev, current) => {
-        const totalTax = getTotoalTax(
-          realIncome,
-          bonus,
-          maxMonthCount,
-          current
-        );
-        graph.push([current, totalTax]);
-        if (totalTax < prev.totalTax) {
-          return {
-            totalTax,
-            bonus: current,
-            graph,
-          };
-        }
-        return prev;
-      },
-      {
-        totalTax: Infinity,
-        bonus,
-        graph: [],
-      }
-    );
+
+  let solution: TaxSolution = {
+    totalTax: Infinity,
+    bonus,
+    graph: [],
+  };
+  iterator(cap)(function (key) {
+    const current = key * step;
+    const totalTax = getTotoalTax(realIncome, bonus, maxMonthCount, current);
+    graph.push([current, totalTax]);
+    if (totalTax < solution.totalTax) {
+      solution = {
+        totalTax,
+        bonus: current,
+        graph,
+      };
+    }
+  });
   return solution;
 }

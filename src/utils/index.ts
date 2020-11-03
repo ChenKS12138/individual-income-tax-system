@@ -18,3 +18,12 @@ export const rarefyArray = <T = any>(arr: T[], cap: number): T[] => {
   const step = Math.floor(arr.length / cap);
   return Array.from({ length: cap }).map((v, key) => arr[key * step]);
 };
+
+export function iterator(time: number, start: number = 0, step: number = 1) {
+  return function (callback) {
+    for (let i = 0; i < time; i++) {
+      callback(start);
+      start += step;
+    }
+  };
+}
