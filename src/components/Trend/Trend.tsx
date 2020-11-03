@@ -1,20 +1,23 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { iterator } from "~/utils";
+import { iterator, rarefyArray } from "~/utils";
 import styles from "./Trend.style";
 
 interface ITrend {
-  points: [number, number][];
-  width: number;
-  height: number;
-  axisTitleX?: string;
-  axistitleY?: string;
+  readonly lines: {
+    name: string;
+    points: [number, number][];
+  }[];
+  readonly width: number;
+  readonly height: number;
+  readonly axisTitleX?: string;
+  readonly axistitleY?: string;
 }
 
 const X_AXIS_STEP = 9;
 const Y_AXIS_STEP = 9;
 
 export default function Trend({
-  points,
+  lines,
   width,
   height,
   axisTitleX,
@@ -22,29 +25,56 @@ export default function Trend({
 }: ITrend) {
   const ref = useRef(null);
 
+  const filteredLines = useMemo(
+    () =>
+      lines
+        .filter((x) => !!x)
+        .map((line) => ({
+          ...line,
+          points: rarefyArray(line.points ?? [], 1000),
+        })),
+    [lines]
+  );
+
   const contentOffset: [number, number] = useMemo(
     () =>
       // [offsetX,offsetY]
-      [80, 0],
+      [180, 0],
     []
   );
 
-  const contentSize = useMemo(() => [width - 80, height - 30], [width, height]);
+  const contentSize = useMemo(() => [width - 180, height - 40], [
+    width,
+    height,
+  ]);
+
+  const [minX, maxX, minY, maxY] = useMemo(
+    () =>
+      filteredLines
+        .map((one) => one.points)
+        .reduce((prev, current) => [...prev, ...current])
+        .reduce(
+          (prev, current) => [
+            Math.min(prev[0], current[0]),
+            Math.max(prev[1], current[0]),
+            Math.min(prev[2], current[1]),
+            Math.max(prev[3], current[1]),
+          ],
+          [Infinity, -Infinity, Infinity, -Infinity]
+        ),
+    [filteredLines]
+  );
+
+  const hasDataReadyToRender = useMemo(
+    () => filteredLines.some((one) => one.points.length > 0),
+    [filteredLines, filteredLines.length]
+  );
 
   useEffect(() => {
     const [contentWidth, contentHeight] = contentSize;
     const [offsetX, offsetY] = contentOffset;
 
     const context: CanvasRenderingContext2D = ref.current.getContext("2d");
-    const [minX, maxX, minY, maxY] = points.reduce(
-      (prev, current) => [
-        Math.min(prev[0], current[0]),
-        Math.max(prev[1], current[0]),
-        Math.min(prev[2], current[1]),
-        Math.max(prev[3], current[1]),
-      ],
-      [Infinity, -Infinity, Infinity, -Infinity]
-    );
 
     // clear
     context.clearRect(0, 0, width, height);
@@ -64,7 +94,7 @@ export default function Trend({
         [offsetX - 20 - 5, (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP)],
         [offsetX - 20 + 5, (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP)],
       ]);
-      points.length &&
+      hasDataReadyToRender &&
         renderText(
           context,
           formatScale(minY + (maxY - minY || 1) * (key / Y_AXIS_STEP)),
@@ -99,13 +129,13 @@ export default function Trend({
           (height + contentHeight) / 2 + 5,
         ],
       ]);
-      points.length &&
+      hasDataReadyToRender &&
         renderText(
           context,
           formatScale(minX + (maxX - minX) * (key / X_AXIS_STEP)),
           [
             offsetX + contentWidth * (key / X_AXIS_STEP),
-            (height + contentHeight) / 2 + 10,
+            (height + contentHeight) / 2 + 15,
           ],
           "middle",
           "center",
@@ -114,28 +144,37 @@ export default function Trend({
     });
 
     // draw content
-    renderBrokenLine(
-      context,
-      points.map((point) => [
-        ((point[0] - minX) / (maxX - minX)) * contentWidth + offsetX,
-        (1 - (point[1] - minY) / Math.max(maxY - minY, 0.001)) * contentHeight +
-          offsetY,
-      ])
-    );
-  }, [ref, points, contentSize, contentOffset, width, height]);
-
-  // 慎用 有问题
-  // useEffect(() => {
-  //   const context: CanvasRenderingContext2D = ref.current.getContext("2d");
-  //   context.setTransform(
-  //     window.devicePixelRatio,
-  //     0,
-  //     0,
-  //     window.devicePixelRatio,
-  //     0,
-  //     0
-  //   );
-  // }, []);
+    hasDataReadyToRender &&
+      filteredLines.forEach((line, key) => {
+        const lineDash = generateLineDash(key);
+        renderBrokenLine(
+          context,
+          line.points.map((point) => [
+            ((point[0] - minX) / (maxX - minX)) * contentWidth + offsetX,
+            (1 - (point[1] - minY) / Math.max(maxY - minY, 0.001)) *
+              contentHeight +
+              offsetY,
+          ]),
+          lineDash
+        );
+        renderBrokenLine(
+          context,
+          [
+            [offsetX - 110, 40 + key * 20],
+            [offsetX - 70, 40 + key * 20],
+          ],
+          lineDash
+        );
+        renderText(
+          context,
+          line.name,
+          [offsetX - 115, 40 + key * 20],
+          "middle",
+          "right",
+          40
+        );
+      });
+  }, [ref, filteredLines, contentSize, contentOffset, width, height]);
 
   return (
     <div style={{ ...styles.container, width, height }}>
@@ -150,13 +189,16 @@ export default function Trend({
  * 绘制一段折线
  * @param {CanvasRenderingContext2D} context
  * @param {[number,number]} points
+ * @param {number[]} lineDash
  */
 function renderBrokenLine(
   context: CanvasRenderingContext2D,
-  points: [number, number][]
+  points: [number, number][],
+  lineDash: number[] = []
 ) {
   context.save();
   context.beginPath();
+  context.setLineDash(lineDash);
   if (points.length) {
     context.moveTo(points[0][0], points[0][1]);
     for (const point of points) {
@@ -187,7 +229,7 @@ function renderText(
   context.save();
   context.textBaseline = textBaseline;
   context.textAlign = textAlign;
-  context.font = "8px serif";
+  context.font = "12px serif";
   context.fillText(text, point[0], point[1], maxWidth);
   context.restore();
 }
@@ -201,4 +243,13 @@ function formatScale(num: number): string {
     return num.toFixed(2);
   }
   return num.toFixed(0);
+}
+
+/**
+ * @param {number} key
+ * @returns {number[]}
+ */
+function generateLineDash(key: number): number[] {
+  if (key <= 0) return [];
+  return [key * 5, ...Array.from({ length: key }).map((v, key) => 5)];
 }

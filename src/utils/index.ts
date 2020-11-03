@@ -1,6 +1,14 @@
 export * from "./tax";
 export * from "./style";
+export * from "./hooks";
 
+/**
+ * min <= value <= max
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 export const numberInRange = (
   value: number,
   min: number,

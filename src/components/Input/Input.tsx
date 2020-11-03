@@ -3,11 +3,11 @@ import { combineStyle, numberInRange } from "~/utils";
 import styles from "./Input.Style";
 
 interface IInput {
-  value: number;
-  onInput: (value: number) => void;
-  id: string;
-  type: "text";
-  style?: any;
+  readonly value: number;
+  readonly onInput: (value: number) => void;
+  readonly id: string;
+  readonly type: "text";
+  readonly style?: any;
 }
 
 export default function Input(props: IInput) {
@@ -28,8 +28,9 @@ export default function Input(props: IInput) {
 }
 
 interface INumberInput extends IInput {
-  min?: number;
-  max?: number;
+  readonly min?: number;
+  readonly max?: number;
+  readonly step?: number;
 }
 
 function NumberInput(props: INumberInput) {
@@ -61,12 +62,12 @@ function NumberInput(props: INumberInput) {
   );
 
   const handleDecrease = useCallback(() => {
-    props.onInput(props.value - 1);
-  }, [props, props.onInput]);
+    props.onInput(props.value - (props.step ?? 1));
+  }, [props, props.onInput, props?.step]);
 
   const handleIncrease = useCallback(() => {
-    props.onInput(props.value + 1);
-  }, [props, props.onInput]);
+    props.onInput(props.value + (props.step ?? 1));
+  }, [props, props.onInput, props?.step]);
 
   return (
     <div style={styles.numberInput.container}>

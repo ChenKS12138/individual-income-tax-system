@@ -3,8 +3,8 @@ import { CSSModule } from "typings/styles";
 import styles from "./Card.style";
 
 interface ICard {
-  children?: React.ReactNode;
-  style?: CSSModule.Style;
+  readonly children?: React.ReactNode;
+  readonly style?: CSSModule.Style;
 }
 
 export default function Card({ children, style }: ICard) {

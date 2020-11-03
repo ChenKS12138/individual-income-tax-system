@@ -10,6 +10,7 @@ type Tax = {
 type TaxSolution = {
   totalTax: number; // 总税额
   bonus: number; // 年终奖
+  totalSalaryIncome: number; // 年总工资收入
   graph?: [number, number][]; // [最终年终奖，最终纳税额]
 };
 
@@ -60,6 +61,7 @@ export const taxTable: Array<Tax> = [
 
 /**
  * @param {number} income
+ * @returns {Tax}
  */
 export function getTaxRule(income: number): Tax {
   return taxTable.find((one) => income > one.min && income <= one.max) ?? null;
@@ -72,7 +74,7 @@ export function getTaxRule(income: number): Tax {
  */
 function getSalaryTax(income: number): number {
   if (income < 0) return null;
-  const tax = getTaxRule(income);
+  const tax = getTaxRule(Math.max(0, income - 5000));
   return tax.rate * income - tax.quickCalculationDeduction;
 }
 
@@ -93,22 +95,23 @@ function getBonusTax(income: number): number {
  * @param {nubmer} income
  * @param {number} bonus
  * @param {number} adjustMonth
- * @param {number} adjustBonus
+ * @param {number} newBonus
+ * @returns {number}
  */
 function getTotoalTax(
   income: number,
   bonus: number,
   adjustMonth: number,
-  adjustBonus: number
+  newBonus: number
 ): number {
   if (adjustMonth === 0) {
     return Number((getSalaryTax(income) * 12 + getBonusTax(bonus)).toFixed(2));
   }
   return Number(
     (
-      getSalaryTax(income + adjustBonus / adjustMonth) * adjustMonth +
+      getSalaryTax(income + (bonus - newBonus) / adjustMonth) * adjustMonth +
       getSalaryTax(income) * (12 - adjustMonth) +
-      getBonusTax(bonus - adjustBonus)
+      getBonusTax(newBonus)
     ).toFixed(2)
   );
 }
@@ -123,14 +126,16 @@ function getTotoalTax(
 export function getOriginalTaxSolution({
   realIncome,
   bonus,
-}: {
+}: Readonly<{
   realIncome: number;
   bonus: number;
-}): TaxSolution {
-  const totalTax = getTotoalTax(realIncome, bonus, 0, 0);
+}>): TaxSolution {
+  const totalTax = getTotoalTax(realIncome, bonus, 0, bonus);
+  const totalSalaryIncome = realIncome * 12;
   return {
     bonus: bonus,
     totalTax,
+    totalSalaryIncome,
   };
 }
 
@@ -146,11 +151,11 @@ export function getSolution2({
   bonus,
   maxMonthCount,
   realIncome,
-}: {
+}: Readonly<{
   realIncome: number;
   bonus: number;
   maxMonthCount: number;
-}): TaxSolution {
+}>): TaxSolution {
   if (maxMonthCount === 0) {
     return getOriginalTaxSolution({
       realIncome,
@@ -165,18 +170,82 @@ export function getSolution2({
     totalTax: Infinity,
     bonus,
     graph: [],
+    totalSalaryIncome: realIncome * 12,
   };
   iterator(cap)(function (key) {
-    const current = key * step;
-    const totalTax = getTotoalTax(realIncome, bonus, maxMonthCount, current);
-    graph.push([current, totalTax]);
+    const newBonus = key * step;
+    const totalTax = getTotoalTax(realIncome, bonus, maxMonthCount, newBonus);
+    graph.push([newBonus, totalTax]);
     if (totalTax < solution.totalTax) {
       solution = {
         totalTax,
-        bonus: current,
+        bonus: newBonus,
         graph,
+        totalSalaryIncome: realIncome * 12 + bonus - newBonus,
       };
     }
   });
   return solution;
+}
+
+/**
+ * 包含了自定义的调整的每月工资，计算纳税方案
+ * @param {object} param0
+ * @param {number} param0.bonus
+ * @param {number} param0.maxMonthCount
+ * @param {number} param0.realIncome
+ * @param {number} param0.adjustedIncome
+ * @param {number[]} param0.customIncomesRatio
+ * @returns {TaxSolution}
+ */
+export function getCustomTaxSolution({
+  bonus,
+  maxMonthCount,
+  realIncome,
+  adjustedIncome,
+  customIncomesRatio,
+}: Readonly<{
+  realIncome: number;
+  adjustedIncome: number;
+  bonus: number;
+  maxMonthCount: number;
+  customIncomesRatio: number[];
+}>): TaxSolution {
+  if (maxMonthCount === 0) {
+    return getOriginalTaxSolution({
+      realIncome,
+      bonus,
+    });
+  }
+  const cap = Math.min(bonus + 1, 500000);
+  const step = Math.max(1, Math.ceil((bonus + 1) / cap));
+
+  const graph = [];
+  let totalTax = Infinity;
+
+  iterator(cap)(function (key) {
+    const newBonus = key * step;
+    const currentAdjustedIncome =
+      (bonus - newBonus) / maxMonthCount + realIncome;
+    const customIncomeTax = customIncomesRatio
+      .map((ratio) => ratio * maxMonthCount * currentAdjustedIncome)
+      .map((one) => getSalaryTax(one))
+      .reduce((prev, current) => prev + current);
+    const currentTotalTax =
+      customIncomeTax +
+      getSalaryTax(realIncome) * (12 - maxMonthCount) +
+      getBonusTax(newBonus);
+    if (currentTotalTax < totalTax) {
+      totalTax = currentTotalTax;
+    }
+    graph.push([newBonus, currentTotalTax]);
+  });
+  const newBonus = bonus - (adjustedIncome - realIncome) * maxMonthCount;
+  return {
+    bonus: newBonus,
+    totalSalaryIncome:
+      adjustedIncome * maxMonthCount + realIncome * (12 - maxMonthCount),
+    graph,
+    totalTax,
+  };
 }
