@@ -9,13 +9,15 @@ export default function App() {
   const [bonus, setBonus] = useState(0);
   const [maxMonthCount, setMaxMonthCount] = useState(0);
 
+  const taxableIncome = useMemo(() => Math.max(0, income - 5000), [income]);
+
   const originalTaxSolution = useMemo(
     () =>
       getOriginalTaxSolution({
         bonus,
-        realIncome: income,
+        realIncome: taxableIncome,
       }),
-    [bonus, income]
+    [bonus, taxableIncome]
   );
 
   const leastTaxSolution = useMemo(
@@ -23,9 +25,9 @@ export default function App() {
       getSolution2({
         maxMonthCount: maxMonthCount,
         bonus,
-        realIncome: income,
+        realIncome: taxableIncome,
       }),
-    [maxMonthCount, bonus, income]
+    [maxMonthCount, bonus, taxableIncome]
   );
 
   const originalTaxSolutionTotalIncome = useMemo(
@@ -51,7 +53,7 @@ export default function App() {
         <div>
           <h5 style={{ ...styles.title, marginBottom: "5px" }}>用户信息输入</h5>
           <div style={styles.formItem}>
-            <label htmlFor="income">每月应纳税所得额（元）: </label>
+            <label htmlFor="income">每月收入（元）: </label>
             <Input.Number
               min={0}
               value={income}
@@ -71,10 +73,10 @@ export default function App() {
             />
           </div>
           <div style={styles.formItem}>
-            <label htmlFor="max-month-count">最多调整月份数：</label>
+            <label htmlFor="max-month-count">调整的月份数：</label>
             <Input.Number
               min={0}
-              max={12}
+              max={3}
               id="max-month-count"
               value={maxMonthCount}
               type="text"
@@ -85,12 +87,12 @@ export default function App() {
           <h5 style={{ ...styles.title, marginBottom: "5px" }}>调整前后对比</h5>
           <div style={{ ...styles.result.container, marginBottom: "5px" }}>
             <div>
-              <p>原总应纳税所得额：{originalTaxSolutionTotalIncome}元</p>
+              <p>原年工资收入：{originalTaxSolutionTotalIncome}元</p>
               <p>原年终奖：{originalTaxSolution.bonus}元</p>
               <p>原总税额：{originalTaxSolution.totalTax}元</p>
             </div>
             <div>
-              <p>现总应纳税所得额：{leastTaxSolutionTotalIncome}元</p>
+              <p>现年工资收入：{leastTaxSolutionTotalIncome}元</p>
               <p>现年终奖：{leastTaxSolution.bonus}元</p>
               <p>现总税额：{leastTaxSolution.totalTax}元</p>
             </div>
@@ -98,7 +100,7 @@ export default function App() {
           <Divider />
           <div style={{ ...styles.result.graph, marginBottom: "5px" }}>
             <h5 style={{ marginBottom: "5px" }}>
-              实际年终奖和实际个人所得税趋势图
+              每月收入和实际个人所得税趋势图
             </h5>
             <Trend
               points={points ?? []}

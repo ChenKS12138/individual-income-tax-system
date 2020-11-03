@@ -51,9 +51,8 @@ export default function Trend({
 
     // draw x-axis
     renderBrokenLine(context, [
-      [offsetX - 20 - 5, 5],
-      [offsetX - 20, 0],
-      [offsetX - 20 + 5, 5],
+      [offsetX - 20 - 10, (height + contentHeight) / 2],
+      [width, (height + contentHeight) / 2],
     ]);
     renderBrokenLine(context, [
       [width - 5, (height + contentHeight) / 2 - 5],
@@ -85,8 +84,9 @@ export default function Trend({
       [offsetX - 20, contentHeight + 25],
     ]);
     renderBrokenLine(context, [
-      [offsetX - 20 - 10, (height + contentHeight) / 2],
-      [width, (height + contentHeight) / 2],
+      [offsetX - 20 - 5, 5],
+      [offsetX - 20, 0],
+      [offsetX - 20 + 5, 5],
     ]);
     iterator(X_AXIS_STEP)(function (key) {
       renderBrokenLine(context, [
