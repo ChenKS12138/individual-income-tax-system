@@ -14,13 +14,13 @@ const styles = {
   textY: createStyle({
     position: "absolute",
     top: 0,
-    transform: " translateX(-100%)",
+    transform: " translateX(-120%)",
   }),
   textX: createStyle({
     position: "absolute",
     bottom: "0",
     right: "0",
-    transform: "translateY(100%)",
+    transform: "translateY(150%)",
   }),
 };
 

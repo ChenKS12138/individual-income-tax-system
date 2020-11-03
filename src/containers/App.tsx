@@ -49,6 +49,7 @@ export default function App() {
         <h3 style={styles.title}>个人综合所得税调整系统</h3>
         <Divider />
         <div>
+          <h5 style={{ ...styles.title, marginBottom: "5px" }}>用户信息输入</h5>
           <div style={styles.formItem}>
             <label htmlFor="income">每月应纳税所得额（元）: </label>
             <Input.Number
@@ -81,6 +82,7 @@ export default function App() {
             />
           </div>
           <Divider />
+          <h5 style={{ ...styles.title, marginBottom: "5px" }}>调整前后对比</h5>
           <div style={{ ...styles.result.container, marginBottom: "5px" }}>
             <div>
               <p>原总应纳税所得额：{originalTaxSolutionTotalIncome}元</p>
@@ -98,7 +100,13 @@ export default function App() {
             <h5 style={{ marginBottom: "5px" }}>
               实际年终奖和实际个人所得税趋势图
             </h5>
-            <Trend points={points ?? []} width={400} height={300} />
+            <Trend
+              points={points ?? []}
+              width={500}
+              height={300}
+              axistitleY="实际个人所得税（元）/y"
+              axisTitleX="实际年终奖（元）/x"
+            />
           </div>
         </div>
       </Card>

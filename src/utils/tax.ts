@@ -156,8 +156,10 @@ export function getSolution2({
     });
   }
   const graph = [];
-  const solution = Array.from({ length: bonus + 1 })
-    .map((x, key) => key)
+  const cap = Math.min(bonus + 1, 500000);
+  const step = Math.max(1, Math.ceil((bonus + 1) / cap));
+  const solution = Array.from({ length: cap })
+    .map((x, key) => key * step)
     .reduce(
       (prev, current) => {
         const totalTax = getTotoalTax(

@@ -5,19 +5,30 @@ interface ITrend {
   points: [number, number][];
   width: number;
   height: number;
+  axisTitleX?: string;
+  axistitleY?: string;
 }
 
-export default function Trend({ points, width, height }: ITrend) {
+const X_AXIS_STEP = 9;
+const Y_AXIS_STEP = 9;
+
+export default function Trend({
+  points,
+  width,
+  height,
+  axisTitleX,
+  axistitleY,
+}: ITrend) {
   const ref = useRef(null);
 
   const contentOffset: [number, number] = useMemo(
     () =>
       // [offsetX,offsetY]
-      [30, 0],
+      [80, 0],
     []
   );
 
-  const contentSize = useMemo(() => [width - 30, height - 30], [width, height]);
+  const contentSize = useMemo(() => [width - 80, height - 30], [width, height]);
 
   useEffect(() => {
     const [contentWidth, contentHeight] = contentSize;
@@ -33,32 +44,76 @@ export default function Trend({ points, width, height }: ITrend) {
       ],
       [Infinity, -Infinity, Infinity, -Infinity]
     );
+
     // clear
     context.clearRect(0, 0, width, height);
 
-    // draw axis
-    brokenLineTo(context, [
-      [(width - contentWidth) / 2, 0],
-      [(width - contentWidth) / 2, height],
+    // draw x-axis
+    renderBrokenLine(context, [
+      [offsetX - 20 - 5, 5],
+      [offsetX - 20, 0],
+      [offsetX - 20 + 5, 5],
     ]);
-    brokenLineTo(context, [
-      [(width - contentWidth) / 2 - 5, 5],
-      [(width - contentWidth) / 2, 0],
-      [(width - contentWidth) / 2 + 5, 5],
-    ]);
-
-    brokenLineTo(context, [
-      [0, (height + contentHeight) / 2],
-      [width, (height + contentHeight) / 2],
-    ]);
-    brokenLineTo(context, [
+    renderBrokenLine(context, [
       [width - 5, (height + contentHeight) / 2 - 5],
       [width, (height + contentHeight) / 2],
       [width - 5, (height + contentHeight) / 2 + 5],
     ]);
+    Array.from({ length: Y_AXIS_STEP }).forEach((v, key) => {
+      renderBrokenLine(context, [
+        [offsetX - 20 - 5, (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP)],
+        [offsetX - 20 + 5, (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP)],
+      ]);
+      points.length &&
+        renderText(
+          context,
+          renderScale(minY + (maxY - minY || 1) * (key / Y_AXIS_STEP)),
+          [
+            offsetX - 20 - 10,
+            (contentHeight + offsetY) * (1 - key / Y_AXIS_STEP),
+          ],
+          "middle",
+          "right",
+          50
+        );
+    });
+
+    // draw y-axis
+    renderBrokenLine(context, [
+      [offsetX - 20, 0],
+      [offsetX - 20, contentHeight + 25],
+    ]);
+    renderBrokenLine(context, [
+      [offsetX - 20 - 10, (height + contentHeight) / 2],
+      [width, (height + contentHeight) / 2],
+    ]);
+    Array.from({ length: X_AXIS_STEP }).forEach((v, key) => {
+      renderBrokenLine(context, [
+        [
+          offsetX + contentWidth * (key / X_AXIS_STEP),
+          (height + contentHeight) / 2 - 5,
+        ],
+        [
+          offsetX + contentWidth * (key / X_AXIS_STEP),
+          (height + contentHeight) / 2 + 5,
+        ],
+      ]);
+      points.length &&
+        renderText(
+          context,
+          renderScale(minX + (maxX - minX) * (key / X_AXIS_STEP)),
+          [
+            offsetX + contentWidth * (key / X_AXIS_STEP),
+            (height + contentHeight) / 2 + 10,
+          ],
+          "middle",
+          "center",
+          50
+        );
+    });
 
     // draw content
-    brokenLineTo(
+    renderBrokenLine(
       context,
       points.map((point) => [
         ((point[0] - minX) / (maxX - minX)) * contentWidth + offsetX,
@@ -68,23 +123,24 @@ export default function Trend({ points, width, height }: ITrend) {
     );
   }, [ref, points, contentSize, contentOffset, width, height]);
 
-  useEffect(() => {
-    const context: CanvasRenderingContext2D = ref.current.getContext("2d");
-    context.setTransform(
-      window.devicePixelRatio,
-      0,
-      0,
-      window.devicePixelRatio,
-      0,
-      0
-    );
-  }, []);
+  // 慎用 有问题
+  // useEffect(() => {
+  //   const context: CanvasRenderingContext2D = ref.current.getContext("2d");
+  //   context.setTransform(
+  //     window.devicePixelRatio,
+  //     0,
+  //     0,
+  //     window.devicePixelRatio,
+  //     0,
+  //     0
+  //   );
+  // }, []);
 
   return (
     <div style={{ ...styles.container, width, height }}>
       <canvas style={styles.canvas} width={width} height={height} ref={ref} />
-      <span style={styles.textY}>实际个人所得税/y</span>
-      <span style={styles.textX}>实际年终奖/x</span>
+      <span style={styles.textY}>{axistitleY}</span>
+      <span style={styles.textX}>{axisTitleX}</span>
     </div>
   );
 }
@@ -94,7 +150,7 @@ export default function Trend({ points, width, height }: ITrend) {
  * @param {CanvasRenderingContext2D} context
  * @param {[number,number]} points
  */
-function brokenLineTo(
+function renderBrokenLine(
   context: CanvasRenderingContext2D,
   points: [number, number][]
 ) {
@@ -108,4 +164,36 @@ function brokenLineTo(
     context.stroke();
   }
   context.restore();
+}
+
+/**
+ * 绘制一段文字
+ * @param {CanvasRenderingContext2D} context
+ * @param {string} text
+ * @param {[number,number]} point
+ * @param {CanvasTextBaseline} textBaseline
+ * @param {CanvasTextAlign} textAlign
+ * @param {number} maxWidth
+ */
+function renderText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  point: [number, number],
+  textBaseline: CanvasTextBaseline,
+  textAlign: CanvasTextAlign,
+  maxWidth: number
+) {
+  context.save();
+  context.textBaseline = textBaseline;
+  context.textAlign = textAlign;
+  context.font = "8px serif";
+  context.fillText(text, point[0], point[1], maxWidth);
+  context.restore();
+}
+
+function renderScale(num: number): string {
+  if (num < 10) {
+    return num.toFixed(2);
+  }
+  return num.toFixed(0);
 }
